@@ -405,6 +405,33 @@ bool obs_module_load()
         [](enum obs_frontend_event event, void *private_data) {
             auto dock = static_cast<MultiOutputWidget*>(private_data);
 
+            if (event == obs_frontend_event::OBS_FRONTEND_EVENT_STREAMING_STARTING) {
+                
+                bool hasAutoStartTarget = false;
+                for (const auto& target : GlobalMultiOutputConfig().targets) {
+                    if (target->syncStart) { 
+                        hasAutoStartTarget = true;
+                        break;
+                    }
+                }
+
+                if (hasAutoStartTarget) {
+                    QMainWindow* mainWindow = (QMainWindow*)obs_frontend_get_main_window();
+                    QMessageBox msgBox(mainWindow);
+                    
+                    msgBox.setWindowTitle(obs_module_text("Warning.Title"));
+                    msgBox.setText(obs_module_text("Warning.Message"));
+                    msgBox.setIcon(QMessageBox::Warning);
+                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    
+                    msgBox.setDefaultButton(QMessageBox::No); 
+
+                    if (msgBox.exec() == QMessageBox::No) {
+                        return; 
+                    }
+                }
+            }
+
             for(auto x: dock->GetAllPushWidgets())
                 x->OnOBSEvent(event);
 
